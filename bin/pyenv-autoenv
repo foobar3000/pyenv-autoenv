@@ -19,6 +19,34 @@ function _python_version_auto_install() {
     fi
 }
 
+function _node_version_auto_install() {
+    _RELOAD=false 
+    if [ -e ".node-version" ];then
+        _NODE_VERSION=$(cat .node-version)
+        _NODE_EXECUTABLE="$VIRTUAL_ENV/bin/node"
+        # Check to see if node version was already installed
+        if [ -f $_NODE_EXECUTABLE ]; then
+          _NODE_INSTALLED_VERSION=$($_NODE_EXECUTABLE -v)
+          if [[ "v$_NODE_VERSION" == "$_NODE_INSTALLED_VERSION" ]]; then
+            _RELOAD=false
+          else
+            echo "Upgrading node to: $_NODE_VERSION"
+            nodeenv --node=$_NODE_VERSION -p --prebuilt
+            _RELOAD=true
+          fi
+        else
+          echo "Installing Nodejs into $VIRTUAL_ENV"
+          nodeenv --node=$_NODE_VERSION -p --prebuilt
+          _RELOAD=true
+        fi
+    fi
+
+  if [ "$_RELOAD" = true ] ; then
+    deactivate
+    _virtualenv_auto_activate
+  fi
+}
+
 function _virtualenv_auto_activate() {
     if [ -e ".python-env" ]; then
         # Check for file containing name of virtualenv
@@ -47,6 +75,7 @@ function _virtualenv_auto_activate() {
 function _autoenv_activate() {
     _python_version_auto_install
     _virtualenv_auto_activate
+    _node_version_auto_install
 }
 
 if [[ $PROMPT_COMMAND =~ ^.*\;[[:space:]$'\n'$'\r']*$ ]]; then
